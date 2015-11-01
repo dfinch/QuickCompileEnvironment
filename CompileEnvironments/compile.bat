@@ -21,28 +21,23 @@ if "%sources%"=="" (
 :: Get a list of all source files in srcdir, and add to sources
 :GETSOURCES
 :: Get the number of files in the directory
-ECHO Getting exe files from src
-dir %srcdir%\*.exe /b 2> NUL
-ECHO __________________________
-ECHO Getting source files from src
-dir %srcdir%\*.cpp /b 2> NUL
-ECHO _____________________________
-
 for /f %%A in ('dir %srcdir%\*.cpp /a-d-s-h /b ^| find /v /c ""') do set filecount=%%A
-::echo File count = %filecount%
 if "%filecount%"=="0" (
     GOTO ERRNOFILES
 )
 
-:: (The /A argument is optional, but I left it in for the smiley face)
-dir %srcdir%\*.cpp %srcdir%\*.exe /b /o:-d /T:W /A:-D > tempdirfiles
+:: Place a list of all files in srcdir into a temporary file
+:: in descending order of their modification (for use in compile control)
+dir %srcdir% /b /o:-d /T:W /A:-D > tempdirfiles
 FOR /F %%G in (tempdirfiles) do ECHO|set /p=%%G >> tempfileslist
 set /p dirfiles= < tempfileslist
 del tempdirfiles
 del tempfileslist
 
+:: Add source files to the list to be compiled
+:: until it hits the file made at the last successful build
 FOR %%G in (%dirfiles%) do (
-    if not %%G==%binfile% (
+    if not %%G==compilecontrol (
         ECHO|set /p=%%G >> temptocompile
     ) else (
         GOTO POPSOURCES
@@ -93,18 +88,19 @@ GOTO COMPILESUCCESS
 
 :: Create hidden file named after executable (for use in getting recent sources)
 :COMPILESUCCESS
-set binfake=%srcdir%/%binfile%.exe
-echo ::: Compilation control file. Delete this file to compile everything. ::: > %binfake%
-echo ECHO This file is for compilation control. It is not the real executable. >> %binfake%
-ATTRIB +R -A -S +H -I %binfake%
-echo ______________________________________________________________
-echo Compilation succeeded! Executable created at /bin/%binfile%
+cd %srcdir%
+DEL /A:H compilecontrol
+cd ..
+echo ::: Compilation control file. Delete this file to compile everything. ::: > %srcdir%/compilecontrol
+ATTRIB +H %srcdir%/compilecontrol
+echo ________________________________________________________________________________
+echo Compilation succeeded! Executable created in /bin/
 GOTO END
 
 
 :: Tell user that compilation failed and exit
 :COMPILEFAILURE
-echo _________________________________________________
+echo ________________________________________________________________________________
 echo Compile failed. g++ returned error(s) (see above)
 GOTO END
 
