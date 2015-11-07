@@ -9,22 +9,21 @@ Requirements:
 
 Usage:
 # Setting up build environment
-	1. Copy all files into a directory (known in the program as the utilities directory)
-	2. Edit EnvBuilder.bat, changing the line "set utilpath=[...]" to reflect the utilities directory
-	3. Copy EnvBuilder.bat into any directory you wish to start a coding project in
-	4. Run EnvBuilder.bat, folloiwng its prompts and inputting the desired information
+	1. Copy all files into a directory (known in the program as the utilities directory).
+	2. Edit EnvBuilder.bat, changing the line "set utilpath=[...]" to reflect the utilities directory.
+	3. Copy EnvBuilder.bat into any directory you wish to start a coding project in.
+	4. Run EnvBuilder.bat, folloiwng its prompts and inputting the desired information.
+	5. Delete the copy of EnvBuilder.bat once setup is complete.
 # Compiling the code
-	5. Place source code files (.cpp) in the source directory ("src", by default), and header files (.h) in "include"
-	6. Run compile.bat (or compile_openGL.bat) from your project directory
+	6. Place source code files (.cpp) in the source directory ("src", by default), and header files (.h) in "include".
+	7. Run compile.bat (or compile_openGL.bat) from your project directory.
 # Executing the code
-	7. Assuming g++ was successful, open the "bin" directory, and run the executable file that you named earlier
+	8. Assuming g++ was successful, open the "bin" directory, and run the executable file that you named earlier.
 
 
 Notes:
-- If you rename the source directory (starts as "src"), make sure the srcdir variable in EnvBuilder.bat reflects this
+- If you rename the source directory (starts as "src"), make sure the srcdir variable in EnvBuilder.bat reflects this.
 - If you do not wish to compile all of (and only) the recently modified source files, specify the ones to compile on the line 
-  "set sources=" in compile.bat (including file extentions, but excluding the path)
-
-
-Errors:
-- Currently does not work properly without some source files in place to compile
+  "set sources=" in compile.bat (including file extentions, but excluding the path).
+- If your program's command prompt window closes on its own, try running the program by Shift-Right-clicking /bin/ and
+  select "Open command window here", then enter the name of the executable into the command prompt.
