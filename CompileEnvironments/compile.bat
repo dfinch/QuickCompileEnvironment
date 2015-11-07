@@ -1,6 +1,7 @@
 set srcdir=src
 set sources=
 
+
 :: If the list of sources is empty, populate it with all .cpp files in srcdir
 :BEGIN
 if "%sources%"=="" (
@@ -29,7 +30,11 @@ if "%filecount%"=="0" (
 :: Place a list of all files in srcdir into a temporary file
 :: in descending order of their modification (for use in compile control)
 dir %srcdir% /b /o:-d /T:W /A:-D > tempdirfiles
-FOR /F %%G in (tempdirfiles) do ECHO|set /p=%%G >> tempfileslist
+FOR /F %%G in (tempdirfiles) do (
+	if not "%%~xG"==".o" (
+		ECHO|set /p=%%G >> tempfileslist
+	)
+)
 set /p dirfiles= < tempfileslist
 del tempdirfiles
 del tempfileslist
@@ -48,7 +53,15 @@ GOTO POPSOURCES
 
 :: Populate the sources variable from a temp file
 :POPSOURCES
-set /p sources= < temptocompile
+if exist temptocompile (
+	set /p sources= < temptocompile
+) else (
+	if "%dirfiles%"=="" (
+		GOTO ERRNOFILES
+	) else (
+		GOTO WARNNOFILES
+	)
+)
 del temptocompile
 GOTO PATHSOURCES
 
@@ -66,7 +79,6 @@ GOTO CHECKSOURCES
 for %%f in (%srcfiles%) do (if exist %%f (ECHO|set /p=%%f >> tempvalidlist))
 set /p srcfiles= < tempvalidlist
 del tempvalidlist
-::for %%f in (%sources%) do (call :appendfile "%%f")
 if NOT "%srcfiles%"=="" (
     GOTO COMPILE
 ) else (
@@ -74,22 +86,60 @@ if NOT "%srcfiles%"=="" (
 )
 
 
+:: Get a list of object files in the source directory
+:GETOBJECTS
+for /f %%A in ('dir %srcdir%\*.o /a-d-s-h /b ^| find /v /c ""') do set objectcount=%%A
+if "%objectcount%"=="0" (
+    GOTO ERRNOOBJECTS
+)
+
+:: Place a list of all object files into a temporary file
+dir %srcdir%\*.o /b > tempobjfiles
+FOR /F %%G in (tempobjfiles) do ECHO|set /p=%%G >> tempobjectlist
+:: Set the objects variable equal to this list of unpathed object files
+set /p objects= < tempobjectlist
+del tempobjfiles
+del tempobjectlist
+GOTO PATHOBJECTS
+
+
+:: Add paths to the list of objects
+:PATHOBJECTS
+FOR %%G in (%objects%) do ECHO|set /p=%srcdir%/%%G >> templinklist
+set /p objfiles= < templinklist
+del templinklist
+GOTO LINK
+
+
+:: Compile the source files into object files
 :COMPILE
 echo Compiling files: %sources%
 echo ________________________________________________________________________________
+cd %srcdir%
 @ECHO ON
 :: Call g++, pass the list of source files
-g++ -D_STDCALL_SUPPORTED -std=c++11 -o ./bin/%binfile% %srcfiles%
+g++ -D_STDCALL_SUPPORTED -std=c++11 -Wall -c %sources%
 @ECHO OFF
 
 if errorlevel 1 GOTO COMPILEFAILURE
+cd ..
+GOTO GETOBJECTS
+
+
+:: Link compiled object files together to make the executable
+:LINK
+@ECHO ON
+g++ -D_STDCALL_SUPPORTED -std=c++11 -Wall -o ./bin/%binfile% %objfiles%
+@ECHO OFF
+
+if errorlevel 1 GOTO LINKFAILURE
 GOTO COMPILESUCCESS
 
 
-:: Create hidden file named after executable (for use in getting recent sources)
+:: Create hidden file named compilecontrol (for use in getting recent sources)
 :COMPILESUCCESS
 cd %srcdir%
-DEL /A:H compilecontrol
+if exist compilecontrol DEL /A:H compilecontrol
 cd ..
 echo ::: Compilation control file. Delete this file to compile everything. ::: > %srcdir%/compilecontrol
 ATTRIB +H %srcdir%/compilecontrol
@@ -102,6 +152,13 @@ GOTO END
 :COMPILEFAILURE
 echo ________________________________________________________________________________
 echo Compile failed. g++ returned error(s) (see above)
+GOTO END
+
+
+:: Tell user that linking failed and exit
+:LINKFAILURE
+echo ________________________________________________________________________________
+echo Linking failed. g++ returned error(s) (see above)
 GOTO END
 
 
@@ -118,9 +175,17 @@ GOTO END
 echo ERROR: compile.bat - No valid source files.
 GOTO END
 
+:ERRNOOBJECTS
+echo ERROR: compile.bat - No valid object files.
+GOTO END
+
 :ERRBADFILE
 echo ERROR: compile.bat - File "%%1" does not exist.
 GOTO LAST
+
+:WARNNOFILES
+echo compile.bat - Nothing to do. Sources have already been compiled.
+GOTO END
 
 :: Pause to read the compile output
 :END
