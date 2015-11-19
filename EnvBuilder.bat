@@ -45,10 +45,17 @@ mkdir lib
 copy %utilpath%\OpenGL\* lib
 
 :: Prepend the executable file name to the compile script
-ECHO @ECHO OFF > temp.bat
-ECHO set binfile=%bf% >> temp.bat
+ECHO @ECHO OFF> temp.bat
+ECHO set binfile=%bf%>> temp.bat
 type %utilpath%\compile_openGL.bat >> temp.bat
 type temp.bat > compile_openGL.bat
+del temp.bat
+
+:: Prepend the executable file name to the run script
+ECHO @ECHO OFF> temp.bat
+ECHO set binfile=%bf%>> temp.bat
+type %utilpath%\run.bat >> temp.bat
+type temp.bat > run.bat
 del temp.bat
 GOTO DIRS
 
@@ -61,10 +68,17 @@ cd %rootdir%
 mkdir lib
 
 :: Prepend the executable file name to the compile script
-ECHO @ECHO OFF > temp.bat
-ECHO set binfile=%bf% >> temp.bat
+ECHO @ECHO OFF> temp.bat
+ECHO set binfile=%bf%>> temp.bat
 type %utilpath%\compile.bat >> temp.bat
 type temp.bat > compile.bat
+del temp.bat
+
+:: Prepend the executable file name to the run script
+ECHO @ECHO OFF> temp.bat
+ECHO set binfile=%bf%>> temp.bat
+type %utilpath%\run.bat >> temp.bat
+type temp.bat > run.bat
 del temp.bat
 GOTO DIRS
 

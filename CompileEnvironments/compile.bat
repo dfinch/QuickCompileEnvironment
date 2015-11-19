@@ -1,7 +1,6 @@
 set srcdir=src
 set sources=
 
-
 :: If the list of sources is empty, populate it with all .cpp files in srcdir
 :BEGIN
 if "%sources%"=="" (
@@ -22,10 +21,15 @@ if "%sources%"=="" (
 :: Get a list of all source files in srcdir, and add to sources
 :GETSOURCES
 :: Get the number of files in the directory
-for /f %%A in ('dir %srcdir%\*.cpp /a-d-s-h /b ^| find /v /c ""') do set filecount=%%A
+dir %srcdir%\*.cpp /A:-D-S-H /b 1> numfiles 2> fnferror
+for /f %%A in ('type numfiles ^| find /v /c ""') do set filecount=%%A
+del numfiles
+del fnferror
+:: If no source files exist, go to the appropriate error
 if "%filecount%"=="0" (
-    GOTO ERRNOFILES
+	GOTO ERRNOFILES
 )
+
 
 :: Place a list of all files in srcdir into a temporary file
 :: in descending order of their modification (for use in compile control)
@@ -55,15 +59,36 @@ GOTO POPSOURCES
 :POPSOURCES
 if exist temptocompile (
 	set /p sources= < temptocompile
+	del temptocompile
 ) else (
 	if "%dirfiles%"=="" (
 		GOTO ERRNOFILES
 	) else (
-		GOTO WARNNOFILES
+		GOTO CHECKBIN
 	)
 )
-del temptocompile
 GOTO PATHSOURCES
+
+
+:: Check if the executable file exists, and recompile if missing
+:CHECKBIN
+dir /b bin\%binfile%.exe 1> binfoundfile 2> fnferror
+set /p binfound= < binfoundfile
+del binfoundfile
+del fnferror
+if "%binfound%"=="" (
+	GOTO RESETCOMPILE
+) else (
+	GOTO WARNNOFILES
+)
+
+
+:: Reset the compile process after deleting the compilecontrol file
+:RESETCOMPILE
+cd %srcdir%
+if exist compilecontrol DEL /A:H compilecontrol
+cd ..
+GOTO BEGIN
 
 
 :: Add paths to the list of source files
